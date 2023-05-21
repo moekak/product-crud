@@ -42,12 +42,19 @@ if (isset($_POST["submit"])) {
 //     var_dump($_FILES);
 // echo '</pre>';
 
+if(!is_dir('images')){
+    mkdir('images');
+}
+
 if (empty($errors) && isset($_POST["submit"])) {
     $image = $_FILES["image"] ?? null;
-    if($image){
-        move_uploaded_file($image["tmp_name"], $image["name"]);
+    $imagePath= '';
+    if($image && $image['temp_name']){
+        $imagePath = 'images/'.randomString(8).'/'.$image['name'];
+        mkdir(dirname($imagePath));
+        move_uploaded_file($image["tmp_name"], $imagePath);
     }
-    exit;
+
   
     
 
