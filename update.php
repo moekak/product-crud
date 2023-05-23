@@ -4,18 +4,20 @@ $pdo = new PDO('mysql:host=localhost;dbname=product_crud', "root", "");
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 $id = '';
-if(isset($_POST["id"])){
-    $id = $_POST["id"];
-} else{
-    header('Location: index.php');
-}
-
-$statement = $pdo->prepare("SELECT * FROM `products` WHERE id=:id");
+if(isset($_GET["id"])){
+    $id = $_GET["id"];
+} 
+$statement = $pdo->prepare("SELECT * FROM products WHERE id = :id");
 $statement->bindValue(':id', $id);
 $statement->execute();
 $product = $statement->fetch(PDO::FETCH_ASSOC);
 
-print_r($product);
+$title = $product["title"];
+$price = $product["price"];
+$description = $product["description"];
+// echo '<pre>';
+// var_dump($product);
+// echo '</pre>';
 
 $errors = [];
 // echo '<pre>';
@@ -23,11 +25,6 @@ $errors = [];
 // echo '</pre>';
 
 if (isset($_POST["submit"])) {
-
-    $image = "";
-    if (isset($_POST["image"])) {
-        $image = $_POST["image"];
-    }
     $title = "";
     if (isset($_POST["title"])) {
         $title = $_POST["title"];
@@ -62,8 +59,12 @@ if(!is_dir('images')){
 
 if (empty($errors) && isset($_POST["submit"])) {
     $image = $_FILES["image"] ?? null;
-    $imagePath= '';
+    $imagePath= $product["image"];
     if($image && $image['tmp_name']){
+        if($product["image"]){
+            unlink($product["image"]);
+        }
+    
         $imagePath = 'images/'.randomString(8).'/'.$image['name'];
         mkdir(dirname($imagePath));
         move_uploaded_file($image["tmp_name"], $imagePath);
@@ -76,13 +77,14 @@ if (empty($errors) && isset($_POST["submit"])) {
 
     $date = date('Y-m-d H:i:s');
 
-    $statement = $pdo->prepare("INSERT INTO `products`( `title`, `description`, `image`, `price`, `create_date`) VALUES (:title,:description,:image,:price,:date)");
+    $statement = $pdo->prepare("UPDATE  `products` SET  `title`= :title,  `description` = :description, `image` = :image, `price` = :price WHERE id = :id" );
+
 
     $statement->bindValue(':image', $imagePath);
     $statement->bindValue(':title', $title);
     $statement->bindValue(':description', $description);
     $statement->bindValue(':price', $price);
-    $statement->bindValue(':date', $date);
+    $statement->bindValue(':id', $id);
 
     $statement->execute();
 
@@ -122,7 +124,12 @@ function randomString($n)
 </head>
 
 <body>
-    <h1>Create new Product</h1>
+    <p>
+        <a href="index.php" class="btn btn-secondary">Go Back to Products</a>
+    </p>
+
+
+    <h1>Update Product <b><?php echo $product["title"]?></b> </h1>
     <?php if (!empty($errors)): ?>
     <div class="alert alert-danger">
         <?php foreach ($errors as $error): ?>
@@ -132,6 +139,10 @@ function randomString($n)
     <?php endif;?>
 
     <form method="post" enctype="multipart/form-data">
+
+        <?php if($product["image"]):?>
+        <img src="<?php echo $product["image"]?>" alt="" class="update-image">
+        <?php endif;?>
         <div class="form-group">
             <label>Product Image</label>
             <br>
@@ -140,16 +151,16 @@ function randomString($n)
 
         <div class="form-group">
             <label>Product Title</label>
-            <input type="text" class="form-control" name="title">
+            <input type="text" class="form-control" name="title" value="<?php echo $title?>">
         </div>
 
         <div class="form-group">
             <label>Product Description</label>
-            <textarea class="form-control" name="description"></textarea>
+            <textarea class="form-control" name="description"><?php echo $description?></textarea>
         </div>
         <div class="form-group">
             <label>Product Price</label>
-            <input type="number" step=".01" class="form-control" name="price">
+            <input type="number" step=".01" class="form-control" name="price" value="<?php echo $price?>">
         </div>
 
         <button type="submit" class="btn btn-primary" name="submit">Submit</button>
